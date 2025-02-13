@@ -18,11 +18,15 @@ class _AgregarNotasPageState extends State<AgregarNotasPage> {
     String contenido = _contenidoController.text.trim();
 
     if (titulo.isNotEmpty && contenido.isNotEmpty) {
-      widget.onSave(titulo, contenido);
+      widget.onSave(titulo, contenido); // Llamar la función de guardado
       _tituloController.clear();
       _contenidoController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Nota guardada')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor ingrese título y contenido')),
       );
     }
   }

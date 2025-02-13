@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:practica3/views/Notas.dart';
 import 'package:practica3/views/Usuario.dart';
 import 'package:practica3/views/agregarnotas.dart';
+import 'package:localstorage/localstorage.dart';
+import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
@@ -32,18 +34,69 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  final List<Map<String, String>> _notas = [];
+  final LocalStorage storage = LocalStorage('notas_app.json');
+  List<Map<String, String>> _notas = [];
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeStorage();
+  }
+
+  Future<void> _initializeStorage() async {
+    await storage.ready;
+    setState(() {
+      _initialized = true;
+    });
+    _cargarNotas();
+  }
+
+  Future<void> _cargarNotas() async {
+    if (!_initialized) return;
+
+    try {
+      final dynamic notasData = storage.getItem('notas');
+      if (notasData != null) {
+        setState(() {
+          _notas = List<Map<String, String>>.from((notasData as List)
+              .map((item) => Map<String, String>.from(item)));
+        });
+      } else {
+        setState(() {
+          _notas = [];
+        });
+      }
+    } catch (e) {
+      print('Error loading notes: $e');
+      setState(() {
+        _notas = [];
+      });
+    }
+  }
+
+  Future<void> _guardarNotas() async {
+    if (!_initialized) return;
+
+    try {
+      await storage.setItem('notas', _notas);
+    } catch (e) {
+      print('Error saving notes: $e');
+    }
+  }
 
   void _agregarNota(String titulo, String contenido) {
     setState(() {
       _notas.add({"titulo": titulo, "contenido": contenido});
     });
+    _guardarNotas();
   }
 
   void _eliminarNota(int index) {
     setState(() {
       _notas.removeAt(index);
     });
+    _guardarNotas();
   }
 
   @override
@@ -57,6 +110,9 @@ class _HomePageState extends State<HomePage> {
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Bloc de Notas'),
+      ),
       body: Row(
         children: [
           NavigationRail(
@@ -69,10 +125,7 @@ class _HomePageState extends State<HomePage> {
             },
             destinations: const [
               NavigationRailDestination(
-                icon: Icon(
-                  Icons.list,
-                  color: Colors.blue,
-                ),
+                icon: Icon(Icons.list, color: Colors.blue),
                 selectedIcon: Icon(Icons.list_alt),
                 label: Text('Notas'),
               ),
@@ -82,12 +135,9 @@ class _HomePageState extends State<HomePage> {
                 label: Text('Agregar Nota'),
               ),
               NavigationRailDestination(
-                icon: Icon(
-                  Icons.person,
-                  color: Colors.blue,
-                ),
+                icon: Icon(Icons.person, color: Colors.blue),
                 selectedIcon: Icon(Icons.person_outline),
-                label: Text('Usuario'),
+                label: Text('Perfil'),
               ),
             ],
           ),
